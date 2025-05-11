@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload X-ray</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f4f8fb;
+            font-family: 'Arial', sans-serif;
+        }
+
+        .container {
+            max-width: 800px;
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        h2, h3 {
+            font-weight: bold;
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+            border-color: #007bff;
+            font-size: 18px;
+            padding: 10px 20px;
+            border-radius: 5px;
+        }
+
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+
+        .form-control {
+            border-radius: 8px;
+            padding: 15px;
+            font-size: 16px;
+            background-color: #f1f1f1;
+        }
+
+        .form-control:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+        }
+
+        .prediction-result {
+            border-top: 2px solid #f1f1f1;
+            padding-top: 20px;
+            margin-top: 20px;
+        }
+
+        .prediction-result img {
+            border-radius: 10px;
+            margin: 10px 0;
+        }
+
+        .alert {
+            font-size: 16px;
+        }
+
+        .prediction-info {
+            margin-top: 15px;
+            font-size: 16px;
+        }
+
+        .prediction-info strong {
+            font-weight: bold;
+        }
+
+        .summary-section {
+            margin-top: 40px;
+            background-color: #f7f9fc;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .summary-section h3 {
+            color: #007bff;
+        }
+
+        .summary-section ul {
+            margin-top: 20px;
+        }
+
+        .summary-section ul li {
+            margin-bottom: 10px;
+        }
+
+        .summary-section p {
+            font-size: 16px;
+        }
+
+        /* Highlight the result with blue and effects */
+        .result {
+            color: blue;
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(0, 0, 255, 0.6), 0 0 20px rgba(0, 0, 255, 0.6), 0 0 30px rgba(0, 0, 255, 0.6);
+        }
+
+        .result:hover {
+            color: darkblue;
+            text-shadow: 0 0 15px rgba(0, 0, 255, 0.8), 0 0 30px rgba(0, 0, 255, 0.8);
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h2 class="text-center">Upload X-ray for {{ session['patient_name'] }}</h2>
+        <p class="text-center">Age: {{ session['age'] }} | DOB: {{ session['dob'] }}</p>
+
+        <div class="alert alert-info" role="alert">
+            <strong>Important:</strong> Please upload the X-ray image(s) in JPG, JPEG, or PNG format. The system will automatically process the image and generate predictions with a heatmap overlay.
+        </div>
+
+        <form action="/upload" method="post" enctype="multipart/form-data">
+            <div class="mb-3">
+                <label for="imagefiles" class="form-label">Select X-ray Image(s)</label>
+                <input class="form-control" type="file" name="imagefiles" multiple required>
+                <small class="form-text text-muted">You can upload multiple images at once.</small>
+            </div>
+            <button class="btn btn-primary mt-3" type="submit">Predict</button>
+        </form>
+
+        {% if predictions %}
+            <!-- Prediction Results -->
+            <div class="prediction-result mt-4">
+                <h3>Prediction Results:</h3>
+                {% for pred in predictions %}
+                    <div class="mt-3 prediction-info">
+                        <p><strong>Prediction:</strong> 
+                            <!-- Only show Positive or Negative without percentage -->
+                            <span class="result">
+                                {{ pred.prediction }}
+                            </span>
+                        </p>
+                        <img src="{{ pred.imagePath }}" width="300" alt="X-ray Image">
+                        <h4 class="mt-2">Grad-CAM Heatmap</h4>
+                        <img src="{{ pred.heatmapPath }}" width="300" alt="Heatmap">
+                    </div>
+                {% endfor %}
+            </div>
+
+            <!-- Pneumonia Summary Section -->
+            <div class="summary-section">
+                <h3>What is Pneumonia?</h3>
+                <p>
+                    Pneumonia is a severe lung infection caused by bacteria, viruses, fungi, or parasites. It leads to inflammation in the air sacs (alveoli) of the lungs, causing them to fill with fluid or pus, which impairs oxygen exchange. This condition can make it difficult to breathe and often leads to serious complications if not treated promptly.
+                </p>
+
+                <p>
+                    Symptoms of pneumonia can range from mild to severe, depending on factors such as the individual’s age, overall health, and the causative organism. Common symptoms include cough, fever, chills, chest pain, and difficulty breathing.
+                </p>
+
+                <h4>Stages of Pneumonia:</h4>
+                <p>Pneumonia typically progresses through three stages:</p>
+                <ul>
+                    <li><strong>Stage 1: Acute Infection (Infiltration)</strong>  
+                        - During this phase, the lungs become infected by bacteria, viruses, or fungi. The alveoli (small air sacs) fill with fluid, pus, and white blood cells. As a result, the patient often experiences fever, cough, chest pain, fatigue, and difficulty breathing.
+                    </li>
+                    <li><strong>Stage 2: Consolidation</strong>  
+                        - The consolidation stage occurs when the infected lung tissue becomes more solid due to the buildup of fluid, white blood cells, and other infection-fighting substances. This phase is visible in X-ray imaging, showing dense areas in the lungs.
+                    </li>
+                    <li><strong>Stage 3: Resolution</strong>  
+                        - With effective treatment, the infection begins to clear up, and the inflammation gradually subsides. The body starts to heal, and the fluid in the lungs is gradually reabsorbed, restoring normal function. The patient might still experience lingering symptoms such as fatigue.
+                    </li>
+                </ul>
+
+                <h4>Risk Factors for Pneumonia:</h4>
+                <p>
+                    Several factors can increase the risk of developing pneumonia, including:
+                </p>
+                <ul>
+                    <li><strong>Age:</strong> Both young children (under 5 years) and older adults (65 and above) are at higher risk.</li>
+                    <li><strong>Weak Immune System:</strong> Conditions like HIV/AIDS, chemotherapy, or long-term use of immunosuppressive medications can weaken the immune system, making individuals more vulnerable.</li>
+                    <li><strong>Chronic Lung Diseases:</strong> People with asthma, chronic obstructive pulmonary disease (COPD), or other chronic respiratory conditions are more likely to develop pneumonia.</li>
+                    <li><strong>Smoking and Alcohol Use:</strong> Smoking damages the lungs' ability to fight infections, and excessive alcohol use can depress the immune system and increase the risk of infection.</li>
+                    <li><strong>Existing Health Conditions:</strong> Diabetes, heart disease, and kidney disease may also increase the risk of pneumonia.
+                </ul>
+
+                <h4>Signs and Symptoms of Pneumonia:</h4>
+                <p>
+                    The symptoms of pneumonia can vary depending on the severity of the infection and the causative agent. Common symptoms include:
+                </p>
+                <ul>
+                    <li><strong>Cough:</strong> Often with mucus or phlegm, and in some cases, blood may be present.</li>
+                    <li><strong>Fever and Chills:</strong> High fever, often accompanied by shaking chills.</li>
+                    <li><strong>Shortness of Breath:</strong> Difficulty breathing, especially with exertion or while lying down.</li>
+                    <li><strong>Chest Pain:</strong> Sharp or stabbing pain that worsens with deep breaths or coughing.</li>
+                    <li><strong>Fatigue:</strong> Feeling extremely tired or weak, which may persist even after the infection clears.</li>
+                </ul>
+
+                <h4>Treatment Options for Pneumonia:</h4>
+                <p>
+                    Pneumonia can usually be treated with the appropriate medications depending on the underlying cause. The treatment options include:
+                </p>
+                <ul>
+                    <li><strong>Antibiotics:</strong> Used for bacterial pneumonia. The choice of antibiotic depends on the specific bacteria causing the infection.</li>
+                    <li><strong>Antiviral Medications:</strong> Prescribed for viral pneumonia, particularly if caused by the flu or other viral infections.</li>
+                    <li><strong>Oxygen Therapy:</strong> For more severe cases of pneumonia, supplemental oxygen may be required to help the patient breathe easier and maintain adequate oxygen levels in the blood.</li>
+                    <li><strong>Rest and Hydration:</strong> Ensuring the patient gets plenty of rest and fluids to help the body recover more quickly.</li>
+                    <li><strong>Hospitalization:</strong> In severe cases, especially in high-risk individuals, hospitalization may be required for more intensive care, such as intravenous antibiotics, fluids, or respiratory support.
+                    </li>
+                </ul>
+
+                <h4>Prevention of Pneumonia:</h4>
+                <p>
+                    Although not all cases of pneumonia are preventable, several measures can help reduce the risk:
+                </p>
+                <ul>
+                    <li><strong>Vaccination:</strong> Vaccines for pneumonia, including the pneumococcal vaccine and the flu vaccine, can reduce the risk of infection.</li>
+                    <li><strong>Hygiene Practices:</strong> Washing hands regularly and practicing good hygiene can help reduce the spread of infections.</li>
+                    <li><strong>Avoid Smoking:</strong> Quitting smoking can improve lung health and reduce the risk of infections.</li>
+                    <li><strong>Staying Healthy:</strong> Eating a balanced diet, getting regular exercise, and maintaining a healthy weight can strengthen the immune system and reduce the risk of pneumonia.</li>
+                </ul>
+            </div>
+        {% endif %}
+    </div>
+</body>
+</html>
